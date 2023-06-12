@@ -1,7 +1,8 @@
 from typing import Any, Dict
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.core.paginator import Paginator
+from datetime import date, timedelta
 from django.db.models.query import QuerySet
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -157,3 +158,39 @@ class UserCarListView(LoginRequiredMixin, generic.ListView):
         qs = super().get_queryset()
         qs = qs.filter(customer=self.request.user)
         return qs
+
+
+# class CarInfoUpdateView(
+#     LoginRequiredMixin, 
+#     UserPassesTestMixin, 
+#     generic.UpdateView
+# ):
+#     model = Car
+#     form_class = CarForm
+#     template_name = 'autoservisas/user_cars_list.html'
+#     success_url = reverse_lazy('user_car_list')
+
+#     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+#         context = super().get_context_data(**kwargs)
+#         obj = self.get_object()
+#         context['car'] = obj.car
+#         if obj.status == 1:
+#             context['changing'] = True
+#         else:
+#             context['extending'] = True
+#         return context
+
+#     def get_initial(self) -> Dict[str, Any]:
+#         initial = super().get_initial()
+#         initial['due_back'] = date.today() + timedelta(days=14)
+#         initial['status'] = 2
+#         return initial
+
+#     def form_valid(self, form):
+#         form.instance.reader = self.request.user
+#         form.instance.status = 2
+#         return super().form_valid(form)
+
+#     def test_func(self) -> bool | None:
+#         obj = self.get_object()
+#         return obj.reader == self.request.user
