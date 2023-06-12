@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}My Order at {{ block.super }}{% endblock title %}
+{% block content %}
+<h1>My Orders</h1>
+{% include "includes/paginator_nav.html" %}
+{% if orders %}
+<ul>
+    {% for order in orders %}
+    <li class="order-status-{{ order.status }}">
+        <span class="order-id">{{ order.id }}</span>
+        <a href="{% url 'order_details' order.pk %}">{{ order.date }}</a>
+        {{ order.get_status_display }}{% if order.due_back %}, return by {{ order.due_back }}{% endif %}
+        {% if order.status == 2 and order.is_overdue %}<span class="repair-overdue">OVERDUE!</span>{% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="box box-warning">
+    There's no orders found.
+</p>
+{% endif %}
+{% include "includes/paginator_pages.html" %}
+{% endblock content %}

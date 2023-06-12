@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Order {{ order.id }} | {{ block.super }}{% endblock title %}
+{% block content %}
+<h1>Order No.: {{ order.id }}</h1>
+<ul>
+    <li>Date: {{ order.date }}</li>
+    <li>Car: {{ order.car }}</li>
+    <li>Owner: {{ order.car.customer }}</li>
+    <li>Notes: {{ order.car.note|safe }}</li>
+</ul>
+
+<h1>Order entries: {{ order.order_entries.count }} </h1>
+{% if order.order_entries.count > 0 %}
+    <ul>
+        {% for entry in order.order_entries.all %}
+            <li> {{ entry }} </li>
+        {% endfor %}
+    </ul>
+    <strong>Total Price: ${{ order.order_sum }}</strong>
+{% endif %}
+<h2>Comments</h2>
+{% if user.is_authenticated and user.is_staff or user == order.car.customer %}
+    <form method="post" action="{{ request.path }}">
+        <h3>Leave your comment</h3>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Post</button>
+    </form>
+{% else %}
+    <p class="box box-info">Only order owner and staff can comment.</p>
+    <p class="box box-info">If you want to write a comment, you have to login or <a href={% url 'signup' %}>sign up</a>.</p>
+{% endif %}
+{% if order.comments.count > 0 %}
+    <ul>
+        {% for comment in order.comments.all %}
+            <li>{{ comment.created_at }} by <a href="{% url 'profile' comment.commenter.id %}">
+                {% if comment.commenter.profile.picture %}
+                    <img src="{{ comment.commenter.profile.picture.url }}" class="user-avatar">
+                {% endif %}
+                {{ comment.commenter }}</a><br>
+                {{ comment.content }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+{% endblock content %}

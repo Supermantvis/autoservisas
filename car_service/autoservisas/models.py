@@ -1,7 +1,11 @@
-from typing import Iterable, Optional
+from django.contrib.auth import get_user_model
+from datetime import date
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
+from tinymce.models import HTMLField
+
+User = get_user_model()
 
 
 class CarModel(models.Model):
@@ -25,12 +29,27 @@ class CarModel(models.Model):
 class Car(models.Model):
     plate_number = models.CharField(_("plate number"), max_length=50)
     vin_code = models.CharField(_("vin code"), max_length=100)
-    customer = models.CharField(_("customer"), max_length=100)
+    note = HTMLField(_("note"), max_length=4000, null=True, blank=True)
     car_model = models.ForeignKey(
         CarModel,
         verbose_name=_("car model"),
         on_delete=models.CASCADE,
         related_name="cars",
+    )
+
+    car_img = models.ImageField(
+        _("car_img"),
+        upload_to="autoservisas/car_images",
+        null=True,
+        blank=True,
+    )
+    customer = models.ForeignKey(
+        User,
+        verbose_name=_("customer"),
+        on_delete=models.CASCADE,
+        related_name='cars',
+        null=True,
+        blank=True
     )
 
     class Meta:
@@ -71,6 +90,18 @@ class Order(models.Model):
         db_index=True
     )
 
+    due_back = models.DateField(_("due back"), null=True, blank=True, db_index=True)
+
+    @property
+    def is_overdue(self):
+        if self.due_back and date.today() > self.due_back:
+            return True
+        return False
+
+    @property
+    def customer(self):
+        return self.car.customer
+
     class Meta:
         ordering = ["date", "id"]
         verbose_name = _("order")
@@ -81,7 +112,6 @@ class Order(models.Model):
 
     def get_absolute_url(self):
         return reverse("order_detail", kwargs={"pk": self.pk})
-
 
 
 class Service(models.Model):
@@ -101,8 +131,9 @@ class Service(models.Model):
 
 
 class OrderEntry(models.Model):
-    amount = models.PositiveIntegerField(_("amount"), default=0)
+    quantity = models.DecimalField(_("quantity"), max_digits=18, decimal_places=2, default=1)
     price = models.DecimalField(_("price"), max_digits=18, decimal_places=2, default=0)
+    total = models.DecimalField(_("total"), max_digits=18, decimal_places=2, default=0)
     service = models.ForeignKey(
         Service,
         verbose_name=_("service"),
@@ -122,7 +153,7 @@ class OrderEntry(models.Model):
         verbose_name_plural = _("order entries")
 
     def __str__(self):
-        return f"{self.amount}, {self.price}, {self.service}"
+        return f"{self.service} {self.quantity} {self.price}"
 
     def get_absolute_url(self):
         return reverse("order_entry_detail", kwargs={"pk": self.pk})
@@ -130,4 +161,35 @@ class OrderEntry(models.Model):
     def save(self, *args, **kwargs):
         if self.price == 0:
             self.price = self.service.price
+        self.total = self.price * self.quantity
         super().save(*args, **kwargs)
+        self.order.order_sum = self.order.order_entries.aggregate(models.Sum("total"))["total__sum"]
+        self.order.save()
+
+
+class OrderComment(models.Model):
+    order = models.ForeignKey(
+        Order,
+        verbose_name=_("order"),
+        on_delete=models.CASCADE,
+        related_name='comments'
+        )
+    commenter = models.ForeignKey(User,
+        verbose_name=_("commenter"),
+        on_delete=models.SET_NULL,
+        related_name='order_comments',
+        null=True, blank=True,
+        )
+    created_at = models.DateTimeField(_("Created"), auto_now_add=True)
+    content = models.TextField(_("content"), max_length=4000)    
+
+    class Meta:
+        ordering=['-created_at']
+        verbose_name = _("order comment")
+        verbose_name_plural = _("order comments")
+
+    def __str__(self):
+        return f"{self.created_at}: {self.commenter}"
+
+    def get_absolute_url(self):
+        return reverse("ordercomment_detail", kwargs={"pk": self.pk})

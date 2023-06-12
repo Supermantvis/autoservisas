@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title %}Welcome to {{ block.super }}{% endblock title %}
 {% block content %}
 <h1>Car Service</h1>
@@ -6,7 +7,8 @@
 <p>Currently available:</p>
 <ul>
     <li><strong>Available services:</strong> {{ services_count }}</li>
-    <li><strong>Services done:</strong> {{ services_done }}</li>
+    <li><strong>Services being done:</strong> {{ services_done }}</li>
     <li><strong>Amount of cars:</strong> {{ count_cars }}</li>
+    <li>You're visiting this page for the <strong>{{ num_visits|ordinal }}</strong> time</li>
 </ul>
 {% endblock content %}

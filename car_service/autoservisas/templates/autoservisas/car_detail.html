@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ car.make }} | {{ block.super }}{% endblock title %}
+{% block content %}
+<h1>{{ car.car_model }}</h1>
+{% if car.car_img %}
+    <img class="car-img" src="{{ car.car_img.url }}">
+{% else %}
+    <img class="car-img" src="{% static 'autoservisas/img/default_image.jpg' %}">
+{% endif %}
+<ul>
+    <li>Model: {{ car.car_model }}</li>
+    <li>Owner: {{ car.customer }}</li>
+    <li>VIN code: {{ car.vin_code }}</li>
+    <li>Plate No.: {{ car.plate_number }}</li>
+</ul>
+{% endblock content %}
+
+{% for detail in car %}
+<span class="book-genre">{{ genre }}</span>
+{% endfor %}
